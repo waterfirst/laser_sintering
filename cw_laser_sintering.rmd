@@ -1,0 +1,39 @@
+library(dplyr)
+library(tidyverse)
+library(readr)
+library(patchwork)
+library(ggplot2)
+
+#################### CW_1_1,2차 merge  ######################
+
+
+rm(list=ls())
+
+df<- read.csv("D:/Non_Documents/uLED/SFA/CW_LASER/CW_1_3.csv", stringsAsFactors=T, header=T)
+str(df)
+
+df$가소결 <-as.factor(df$가소결)
+df$Tape.후저항 <-as.factor(df$Tape.후저항)
+
+df$laser <-  factor(df$laser, levels=c("0/60/90", "90/60/0", "60/60/60", "90/60/90"))
+
+
+p1<- df %>% ggplot(aes(x=laser, y=Resistance))+geom_boxplot(aes(fill=가소결))+
+  ggtitle("Plot of Resistance Ag after CW_Laser sintering")+
+  ylab("소결후 저항(Ω)")+
+  theme(axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"))+ 
+  xlab("Laser slope time (sec)")+
+  scale_y_continuous(limits = c(0, 250))
+
+
+p1_2<-df %>% ggplot(aes(x=laser, y=초기저항))+geom_boxplot(aes(fill=가소결))+
+  ggtitle("Plot of Resistance Ag after CW_Laser sintering")+
+  ylab("초기저항(Ω)")+
+  theme(axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"))+ 
+  xlab("Laser slope time (sec)")+
+  scale_y_continuous(limits = c(0, 400))
+
+p1+ scale_fill_brewer(palette = "Set3")+
+  theme(legend.title = element_text(face = 1,color = 'blue',size = 20))+
+  theme(legend.text = element_text(face = 1,color = 'black',size = 15))+
+  geom_hline(yintercept=68, linetype="dashed", color = "red")+ annotate("text", x = 1, y=72, label = "열소결 ~68Ω",col="red")
