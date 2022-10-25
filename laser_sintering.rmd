@@ -1,0 +1,141 @@
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(gridExtra)
+
+rm(list=ls())
+getwd()
+setwd("D:/Non_Documents/AI/R/LASER")
+dir()
+
+df <- read.csv("laser2.csv")
+
+str(df)
+df %>% ggplot(aes(x=time, y=temp)) + geom_line()+ geom_smooth(se=FALSE) 
+
+nrow(df)
+
+df1 <- df %>% slice(1:500)
+df1 %>% ggplot(aes(x=time, y=temp)) + geom_line()+ geom_smooth(se=FALSE) 
+mean(df1[,2])
+
+###################################### ��?Ǻ? ?µ? ?׷???
+
+
+df1 <- read.csv("laser1.csv")
+df2<- df1 %>% pivot_longer(cols=X60kH_0.9W:X90kH_1.3W, 
+                           names_to = 'rep_rate-power', 
+                           names_prefix = "X",
+                           values_to = 'temp')
+
+df2$`rep_rate-power` <-as.factor(df2$`rep_rate-power`)
+df2$time <- round(df2$time*(10^6))
+p1<- df2 %>%  ggplot(aes(x=time, y=temp, group = `rep_rate-power`, colour = `rep_rate-power`)) +
+  geom_line() + theme_bw()+facet_wrap(~ `rep_rate-power`)+
+  ggtitle("Plot of Ag laser sintering simulation_80% overlap_ratio") +
+  xlab("time(us)") + ylab("Temperature(??)")+
+  theme(axis.title=element_text(size=12, face='bold'), axis.text.x = element_text(size=12, face='bold'),
+        axis.text.y = element_text(size=12, face='bold'),
+        title = element_text(size=15), legend.text=element_text(size=10))
+
+df11 <- read.csv("laser2.csv")
+df22<- df11 %>% pivot_longer(cols=X60kH_0.9W:X90kH_1.3W, 
+                             names_to = 'rep_rate-power', 
+                             names_prefix = "X",
+                             values_to = 'temp')
+df22$`rep_rate-power` <-as.factor(df22$`rep_rate-power`)
+df22$time <- df22$time*(10^6)
+p2<- df22 %>%  ggplot(aes(x=time, y=temp, group = `rep_rate-power`, colour = `rep_rate-power`)) +
+  geom_line() + theme_bw()+facet_wrap(~ `rep_rate-power`)+
+  ggtitle("Plot of Ag laser sintering simulation_90% overlap_ratio") +
+  xlab("time(us)") + ylab("Temperature(??)")+
+  theme(axis.title=element_text(size=12, face='bold'), axis.text.x = element_text(size=12, face='bold'),
+        axis.text.y = element_text(size=12, face='bold'),
+        title = element_text(size=15), legend.text=element_text(size=10))
+
+grid.arrange(p1, p2, nrow=2)
+
+
+
+##############################  ???? bar ?׷???
+
+max1<-df2 %>% filter(!is.na(temp)) %>% group_by( `rep_rate-power`) %>% summarise(max=max(temp))
+avg1<-df2 %>% filter(!is.na(temp)) %>% group_by( `rep_rate-power`) %>% summarise(avg=mean(temp))
+df3<-cbind(max1, avg1[,2])
+colnames(df3)<-c("condition", "max.temp", "avg.temp")
+df4 <- df3 %>% pivot_longer(cols=max.temp:avg.temp, names_to = 'kinds', values_to ='temperature' )
+
+p3<-ggplot(df4, aes(x=condition, y=temperature, fill=kinds))+
+  geom_bar(stat='identity',position = 'dodge')+
+  coord_flip()+theme_bw()+
+  ggtitle("Ag temperature esimation by Simulation ") +
+  geom_text(aes(label=round(temperature)), vjust=0.5, hjust=-0.3, check_overlap = T)
+
+  
+
+max11<-df22 %>% filter(!is.na(temp)) %>% group_by( `rep_rate-power`) %>% summarise(max=max(temp))
+avg11<-df22 %>% filter(!is.na(temp)) %>% group_by( `rep_rate-power`) %>% summarise(avg=mean(temp))
+df33<-cbind(max11, avg11[,2])
+colnames(df33)<-c("condition", "max.temp", "avg.temp")
+df44 <- df33 %>% pivot_longer(cols=max.temp:avg.temp, names_to = 'kinds', values_to ='temperature' )
+
+p4<-ggplot(df44, aes(x=condition, y=temperature, fill=kinds))+
+  geom_bar(stat='identity',position = 'dodge')+
+  coord_flip()+theme_bw()+
+  geom_text(aes(label=round(temperature)), vjust=0.5, hjust=-0.3, check_overlap = T)
+
+p4
+
+grid.arrange(p3, p4, nrow=2)
+
+
+############################ bar ?׷???
+
+df5<-cbind(df4, df44$temperature)
+colnames(df5)<-c("condition", "kinds" ,  "OL80", "OL90")
+df6<-df5 %>% pivot_longer(cols = OL80:OL90, names_to = 'overlap', values_to = 'temperature')
+df6
+ggplot(df6, aes(x=condition, y=temperature, group=overlap, fill=overlap))+geom_bar(stat='identity',position = 'dodge')+
+  facet_wrap(kinds~.,ncol = 2)+
+  theme(axis.text.x = element_text(angle=60))+
+  geom_text(aes(label=round(temperature)), vjust=-0.3, check_overlap = T)
+
+
+
+######################?߼??? ####################
+
+  
+df2
+p5<- df2 %>% filter(`rep_rate-power`=="X60kH_1.3W") %>%  ggplot(aes(x=time, y=temp, colour = "5 pulses")) +  geom_line(aes(col="average")) + 
+  ggtitle("60kHz_1.3W_80% overlap")  +
+
+  scale_y_continuous(breaks=seq(0, 600, 100)) +
+  theme(legend.position = "none")+
+  xlab("time(ns)") + ylab("Temperature(??)")
+
+p6<- df22 %>% filter(`rep_rate-power`=="X60kH_1.3W") %>%  ggplot(aes(x=time, y=temp, colour = "10 pulses")) + 
+  geom_line(aes(col="average")) +
+  ggtitle("60kHz_1.3W_90% overlap") +
+
+  scale_y_continuous(breaks=seq(0, 600, 100)) +
+  theme(legend.position = "none")+
+  xlab("time(ns)") + ylab("Temperature(??)")
+
+
+p7<- df2 %>% filter(`rep_rate-power`=="X90kH_0.9W") %>%  ggplot(aes(x=time, y=temp, colour = "5 pulses")) +  geom_line(aes(col="average")) + 
+  ggtitle("90kHz_0.9W_80% overlap") +
+
+  scale_y_continuous(breaks=seq(0, 600, 100)) +
+  theme(legend.position = "none")+
+  xlab("time(ns)") + ylab("Temperature(??)")
+
+p8<- df22 %>% filter(`rep_rate-power`=="X90kH_0.9W") %>%  ggplot(aes(x=time, y=temp, colour = "10 pulses")) + 
+  geom_line(aes(col="average")) + 
+  ggtitle("90kHz_0.9W_90% overlap") +
+  theme(legend.position = "none")+
+
+  scale_y_continuous(breaks=seq(0, 600, 100)) +
+  xlab("time(ns)") + ylab("Temperature(??)")
+
+
+grid.arrange(p5, p6, p7, p8, nrow=2)
